@@ -325,3 +325,100 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 
 	spinlock_release(&cv->cv_spinlock);
 }
+
+
+////////////////////////////////////////////////////////////
+//
+// RW
+
+struct rwlock * 
+rwlock_create(const char * name) {
+
+	struct rwlock *rw;
+
+	rw = kmalloc(sizeof(*rw));
+	if (rw == NULL) {
+		return NULL;
+	}
+
+	rw->rwlock_name = kstrdup(name);
+	if (rw->rwlock_name == NULL) {
+		kfree(rw);
+		return NULL;
+	}
+
+	rw->rwlock_oktoread = cv_create(name);
+	if (rw->rwlock_oktoread == NULL){
+		kfree(rw->rwlock_name);
+		kfree(rw);
+		return NULL;
+	}
+
+	rw->rwlock_oktowrite =  cv_create(name);
+	if (rw->rwlock_oktowrite == NULL) {
+		kfree(rw->rwlock_name);
+		kfree(rw);
+		return NULL;	
+	}
+
+	lock_create(name);
+	return rw;
+}
+
+
+void 
+rwlock_destroy(struct rwlock *rw) {
+	KASSERT(rw != NULL);
+
+	lock_destroy(rw->rw_lock);	
+	cv_destroy(rw->rwlock_oktowrite);
+	cv_destroy(rw->rwlock_oktowrite);
+	kfree(rw->rwlock_name);
+	kfree(rw);
+}
+
+
+void 
+rwlock_acquire_read(struct rwlock *rw) {
+	KASSERT(rw != NULL);
+
+	lock_acquire(rw->rw_lock);
+
+	cv_wait(rw->rwlock_oktoread, rw->rw_lock);
+
+	lock_release(rw->rw_lock);
+}
+
+
+void 
+rwlock_release_read(struct rwlock *rw) {
+	KASSERT(rw != NULL);
+
+	lock_acquire(rw->rw_lock);
+
+	cv_signal(rw->rwlock_oktoread, rw->rw_lock);
+
+	lock_release(rw->rw_lock);
+}
+
+
+void rwlock_acquire_write(struct rwlock *rw) {
+	KASSERT(rw != NULL);
+
+	lock_acquire(rw->rw_lock);
+
+	cv_wait(rw->rwlock_oktowrite, rw->rw_lock);
+
+	lock_release(rw->rw_lock);
+}
+
+
+void rwlock_release_write(struct rwlock *rw) {
+	KASSERT(rw != NULL);
+
+	lock_acquire(rw->rw_lock);
+
+	cv_signal(rw->rwlock_oktowrite, rw->rw_lock);
+
+	lock_release(rw->rw_lock);
+}
