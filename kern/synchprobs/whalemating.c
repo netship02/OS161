@@ -40,12 +40,28 @@
 #include <test.h>
 #include <synch.h>
 
+static unsigned long male_count;
+static unsigned long female_count;
+static struct lock *lock_male;
+static struct lock *lock_female;
+static struct lock *lock_mm;
+static struct cv *cv_male;
+static struct cv *cv_female;
+static struct cv *cv_mm;
+
 /*
  * Called by the driver during initialization.
  */
 
 void whalemating_init() {
-	return;
+	male_count = 0;
+	female_count = 0;
+	lock_male = lock_create("lock_male");
+	lock_female = lock_create("lock_female");
+	lock_mm = lock_create("lock_mm");
+	cv_male = cv_create("cv_male");
+	cv_female = cv_create("cv_female");
+	cv_mm = cv_create("cv_mm");
 }
 
 /*
@@ -54,38 +70,105 @@ void whalemating_init() {
 
 void
 whalemating_cleanup() {
-	return;
+	KASSERT(lock_male != NULL);
+	KASSERT(lock_female != NULL);
+	KASSERT(lock_mm != NULL);
+	KASSERT(cv_male != NULL);
+	KASSERT(cv_female != NULL);
+	KASSERT(cv_mm != NULL);
+
+	lock_destroy(lock_male);
+	lock_destroy(lock_female);
+	lock_destroy(lock_mm);
+	cv_destroy(cv_male);
+	cv_destroy(cv_female);
+	cv_destroy(cv_mm);
+
+	lock_male = lock_female = lock_mm = NULL;
+	cv_male = cv_female = cv_mm = NULL;
 }
 
 void
 male(uint32_t index)
 {
-	(void)index;
-	/*
-	 * Implement this function by calling male_start and male_end when
-	 * appropriate.
-	 */
-	return;
+	KASSERT(lock_male != NULL);
+	KASSERT(lock_female != NULL);
+	KASSERT(lock_mm != NULL);
+	KASSERT(cv_male != NULL);
+	KASSERT(cv_female != NULL);
+	KASSERT(cv_mm != NULL);
+
+	male_start(index);
+
+	lock_acquire(lock_mm);
+	cv_signal(cv_mm, lock_mm);
+	lock_release(lock_mm);
+
+	male_count++;
+
+	lock_acquire(lock_male);
+	cv_wait(cv_male, lock_male);
+	male_end(index);
+	lock_release(lock_male);
+	
 }
 
 void
 female(uint32_t index)
 {
-	(void)index;
-	/*
-	 * Implement this function by calling female_start and female_end when
-	 * appropriate.
-	 */
-	return;
+	KASSERT(lock_male != NULL);
+	KASSERT(lock_female != NULL);
+	KASSERT(lock_mm != NULL);
+	KASSERT(cv_male != NULL);
+	KASSERT(cv_female != NULL);
+	KASSERT(cv_mm != NULL);
+
+	female_start(index);
+
+	lock_acquire(lock_mm);
+	cv_signal(cv_mm, lock_mm);
+	lock_release(lock_mm);	
+
+	female_count++;
+
+	lock_acquire(lock_female);
+	cv_wait(cv_female, lock_female);
+
+	female_end(index);
+	lock_release(lock_female);
 }
 
 void
 matchmaker(uint32_t index)
 {
-	(void)index;
-	/*
-	 * Implement this function by calling matchmaker_start and matchmaker_end
-	 * when appropriate.
-	 */
-	return;
+	KASSERT(lock_male != NULL);
+	KASSERT(lock_female != NULL);
+	KASSERT(lock_mm != NULL);
+	KASSERT(cv_male != NULL);
+	KASSERT(cv_female != NULL);
+	KASSERT(cv_mm != NULL);
+
+	matchmaker_start(index);
+
+
+	lock_acquire(lock_mm);
+	while (male_count <= 0 || female_count <= 0) {
+		cv_wait(cv_mm, lock_mm);
+	}
+
+
+	male_count--;
+	female_count--;
+
+	lock_acquire(lock_male);
+	cv_signal(cv_male, lock_male);
+	lock_release(lock_male);
+
+
+	lock_acquire(lock_female);
+	cv_signal(cv_female, lock_female);
+	lock_release(lock_female);
+
+	matchmaker_end(index);
+	lock_release(lock_mm);
 }
