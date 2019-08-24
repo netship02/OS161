@@ -48,6 +48,7 @@
 #include <current.h>
 #include <addrspace.h>
 #include <vnode.h>
+#include <file_table.h>
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
@@ -62,7 +63,6 @@ struct proc *
 proc_create(const char *name)
 {
 	struct proc *proc;
-
 	proc = kmalloc(sizeof(*proc));
 	if (proc == NULL) {
 		return NULL;
@@ -81,6 +81,13 @@ proc_create(const char *name)
 
 	/* VFS fields */
 	proc->p_cwd = NULL;
+
+	struct file_table *ft = NULL;
+	int result = file_table_create(ft);
+	if (result == 1){
+		kfree(proc);
+		return NULL;
+	}
 
 	return proc;
 }
@@ -167,6 +174,10 @@ proc_destroy(struct proc *proc)
 
 	KASSERT(proc->p_numthreads == 0);
 	spinlock_cleanup(&proc->p_lock);
+
+	KASSERT(proc->ft != NULL);
+	kfree(proc->p_name);
+	kfree(proc);
 
 	kfree(proc->p_name);
 	kfree(proc);
