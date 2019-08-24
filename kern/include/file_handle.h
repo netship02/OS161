@@ -17,17 +17,16 @@
 
 struct file_handle {
 	struct vnode *file; 
-	int flags;                    	
-    off_t pos; 
+	int fh_flags;                    	
+    off_t fh_pos; 
     volatile unsigned int refcount;     	
     struct spinlock fh_lock;            	                  	
-    struct rwlock *file_lock;             	
+    struct lock *file_lock;          	/* Decide which synch primitive to use */   	
 };
 
 
-int  file_handle_create(struct file_handle *fh, struct vnode *file, int fh_flags, off_t fh_pos);  /* ******* */
+int  file_handle_create(struct file_handle **fh, struct vnode *file, int fh_flags, off_t fh_pos);
 void file_handle_destroy(struct file_handle *);
-
 bool file_handle_permission(struct file_handle *fh, int flag);
 
 #endif

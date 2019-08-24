@@ -82,13 +82,13 @@ proc_create(const char *name)
 	/* VFS fields */
 	proc->p_cwd = NULL;
 
+	/* File Table */
 	struct file_table *ft = NULL;
-	int result = file_table_create(ft);
+	int result = file_table_create(&ft);
 	if (result == 1){
 		kfree(proc);
 		return NULL;
 	}
-
 	return proc;
 }
 

@@ -12,6 +12,7 @@
 
 
 #include <syscall.h>
+#include <proc.h>
 #include <file_handle.h>
 #include <file_table.h>
 
@@ -24,7 +25,15 @@
 
 int
 sys_close(int fd, int32_t *result) {
-	(void)fd;
-	(void)result;
+	struct file_table *ft;
+
+	if (!(fd > 2 && fd < 60)) {
+		return EBADF;
+	}
+
+	ft = curproc->ft;
+	file_handle_destroy(ft->fd_array[fd]);
+	ft->fd_array[fd] = NULL;
+	*result = 0;
 	return 0;
 }
