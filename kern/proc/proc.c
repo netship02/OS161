@@ -83,10 +83,10 @@ proc_create(const char *name)
 	proc->p_cwd = NULL;
 
 	/* File Table */
-	struct file_table *ft = NULL;
-	int result = file_table_create(&ft);
-	if (result == 1){
+	int result = file_table_create(&proc->ft, 'a');
+	if (result){
 		kfree(proc);
+		kprintf("File table creation failed on current proc");
 		return NULL;
 	}
 	return proc;
@@ -228,6 +228,16 @@ proc_create_runprogram(const char *name)
 		newproc->p_cwd = curproc->p_cwd;
 	}
 	spinlock_release(&curproc->p_lock);
+
+	/*Std File init*/
+	int resultz = file_table_init_std(newproc->ft);
+	KASSERT(resultz == 0);
+	KASSERT(newproc->ft->fd_array[0] != NULL);
+	KASSERT(newproc->ft->fd_array[1] != NULL);
+	KASSERT(newproc->ft->fd_array[2] != NULL);
+	if (resultz) {
+		return NULL;
+	}
 
 	return newproc;
 }

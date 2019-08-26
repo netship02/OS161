@@ -25,6 +25,8 @@ struct file_handle {
 };
 
 
+// return 0 on success and -1 or other values on failing
+
 int  file_handle_create(struct file_handle **fh, struct vnode *file, int fh_flags, off_t fh_pos);
 void file_handle_destroy(struct file_handle *);
 bool file_handle_permission(struct file_handle *fh, int flag);

@@ -21,13 +21,17 @@ int  file_handle_create(struct file_handle **fh, struct vnode *file, int fh_flag
 	KASSERT(file != NULL);
 
 	struct file_handle *this_fh;
-	this_fh = kmalloc(sizeof(this_fh));
+	this_fh = kmalloc(sizeof(*this_fh));
 	if (this_fh == NULL) {
 		return -1;
 	}
 
 	spinlock_init(&this_fh->fh_lock);
 	this_fh->file_lock = lock_create("file_handle_lock");
+	if (this_fh->file_lock == NULL) {
+		kprintf("lock_create failed on file_handle");
+		return -1;
+	}
 
 	this_fh->file = file;
 	this_fh->fh_flags = fh_flags;
@@ -36,6 +40,7 @@ int  file_handle_create(struct file_handle **fh, struct vnode *file, int fh_flag
 
 
 	*fh = this_fh;
+	KASSERT(fh != NULL);
 	return 0;
 } 
 
