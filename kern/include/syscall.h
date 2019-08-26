@@ -62,5 +62,12 @@ int sys_open(const char *filename, int flags, int32_t *fd);
 int sys_read(int fd, void *buf, size_t buflen, int32_t *read);
 int sys_write(int fd, const void *buf, size_t buflen, int32_t *wrote);
 int sys_close(int fd, int32_t *result);
+int sys_lseek(int fd, off_t pos, int32_t whence, off_t *result);
+int sys_chdir(const char *pathname, int32_t *result);
+int sys___getcwd(char *buf, size_t buflen, int32_t *result);
+int sys_dup2(int oldfd, int newfd, int32_t *result);
+
+
+
 
 #endif /* _SYSCALL_H_ */
